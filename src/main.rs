@@ -1,3 +1,4 @@
+use clap::Parser;
 use clap_derive::Parser;
 use image::{codecs::jpeg::JpegEncoder, GenericImageView};
 use std::{fs::File, io::Write};
@@ -9,7 +10,7 @@ const MAX_DIMENSION: u32 = 2000;
 struct Opts {
     /// Target size in bytes (e.g., 100k, 1M)
     #[clap(short, default_value = "200000")]
-    target_size: String,
+    size_target: String,
 
     /// Input image file path
     #[clap(required = true)]
@@ -20,17 +21,38 @@ struct Opts {
     output_file: String,
 }
 
+impl Opts {
+    fn size_target(&self) -> usize {
+        let size_target = self.size_target.to_lowercase();
+        let size = size_target
+            // Gets rid of the unit (e.g., "k" or "m")
+            .trim_end_matches(|c| !char::is_numeric(c))
+            .parse::<usize>()
+            .unwrap();
+        let unit = size_target
+            // Gets rid of the size (e.g., "100" in "100k")
+            .trim_start_matches(char::is_numeric);
+
+        match unit {
+            "k" => size * 1000,
+            "m" => size * 1000000,
+            _ => size,
+        }
+    }
+}
+
 fn main() {
+    let opts: Opts = Opts::parse();
+
     // Load the image
-    let img = image::open("examples/screenshot_of_puzzle_shark.png").unwrap();
+    let size_target = opts.size_target();
+    let img = image::open(opts.input_file).unwrap();
 
     let resized_img = scale_down_image(img, MAX_DIMENSION);
 
-    let size_target = 200_000;
-
     let buffer = encode_jpeg_for_size_target(resized_img, size_target);
 
-    write_result_file(buffer);
+    write_result_file(buffer, &opts.output_file);
 }
 
 /// Encode the image as a JPEG with a target file size.
@@ -108,15 +130,12 @@ fn encode_jpeg(resized_img: image::DynamicImage, quality: u8) -> Vec<u8> {
 }
 
 /// Write the result to a file after we got the desired size.
-fn write_result_file(buffer: Vec<u8>) {
-    // Create the "output" directory if it doesn't exist
-    std::fs::create_dir_all("output").unwrap();
-
+fn write_result_file(buffer: Vec<u8>, path: &str) {
     // Create a new file named "output/output.jpg"
-    let mut file = File::create("output/output.jpg").unwrap();
+    let mut file = File::create(path).unwrap();
 
     // Write the contents of the buffer to the file
     file.write_all(&buffer).unwrap();
 
-    println!("Resized image saved to output/output.jpg");
+    println!("Resized image saved to {}", path);
 }
