@@ -11,3 +11,7 @@ license = "MIT or Apache-2.0"
 image = "0.25.1"
 clap = "4.5.4"
 clap_derive = "4.5.4"
+
+# Make this run fast in debug mode by compiling dependencies with optimizations
+[profile.dev.package."*"]
+opt-level = 3
