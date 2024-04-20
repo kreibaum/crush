@@ -6,7 +6,7 @@ use std::{fs::File, io::Write};
 const MAX_DIMENSION: u32 = 2000;
 
 #[derive(Parser)]
-#[clap(name = "crush", version = "1.0", author = "Your Name")]
+#[clap(name = "crush", version = "1.0", author = "Rolf Kreibaum")]
 struct Opts {
     /// Target size in bytes (e.g., 100k, 1M)
     #[clap(short, default_value = "200000")]
